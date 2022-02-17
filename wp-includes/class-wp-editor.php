@@ -713,8 +713,8 @@ final class _WP_Editors {
 	}
 
 	/**
+	 * @since 3.3.0
 	 *
-	 * @static
 	 * @param array $init
 	 * @return string
 	 */
@@ -723,12 +723,12 @@ final class _WP_Editors {
 
 		foreach ( $init as $key => $value ) {
 			if ( is_bool( $value ) ) {
-				$val = $value ? 'true' : 'false';
+				$val      = $value ? 'true' : 'false';
 				$options .= $key . ':' . $val . ',';
 				continue;
 			} elseif ( ! empty( $value ) && is_string( $value ) && (
-				( '{' == $value{0} && '}' == $value{strlen( $value ) - 1} ) ||
-				( '[' == $value{0} && ']' == $value{strlen( $value ) - 1} ) ||
+				( '{' === $value[0] && '}' === $value[ strlen( $value ) - 1 ] ) ||
+				( '[' === $value[0] && ']' === $value[ strlen( $value ) - 1 ] ) ||
 				preg_match( '/^\(?function ?\(/', $value ) ) ) {
 
 				$options .= $key . ':' . $value . ',';

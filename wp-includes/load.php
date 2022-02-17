@@ -388,20 +388,26 @@ function wp_set_lang_dir() {
  *
  * @since 2.5.0
  *
- * @global wpdb $wpdb The WordPress database class.
+ * @global wpdb $wpdb WordPress database abstraction object.
  */
 function require_wp_db() {
 	global $wpdb;
 
-	require_once( ABSPATH . WPINC . '/wp-db.php' );
-	if ( file_exists( WP_CONTENT_DIR . '/db.php' ) )
-		require_once( WP_CONTENT_DIR . '/db.php' );
+	require_once ABSPATH . WPINC . '/wp-db.php';
+	if ( file_exists( WP_CONTENT_DIR . '/db.php' ) ) {
+		require_once WP_CONTENT_DIR . '/db.php';
+	}
 
 	if ( isset( $wpdb ) ) {
 		return;
 	}
 
-	$wpdb = new wpdb( DB_USER, DB_PASSWORD, DB_NAME, DB_HOST );
+	$dbuser     = defined( 'DB_USER' ) ? DB_USER : '';
+	$dbpassword = defined( 'DB_PASSWORD' ) ? DB_PASSWORD : '';
+	$dbname     = defined( 'DB_NAME' ) ? DB_NAME : '';
+	$dbhost     = defined( 'DB_HOST' ) ? DB_HOST : '';
+
+	$wpdb = new wpdb( $dbuser, $dbpassword, $dbname, $dbhost );
 }
 
 /**
@@ -647,13 +653,6 @@ function wp_set_internal_encoding() {
  * @access private
  */
 function wp_magic_quotes() {
-	// If already slashed, strip.
-	if ( get_magic_quotes_gpc() ) {
-		$_GET    = stripslashes_deep( $_GET    );
-		$_POST   = stripslashes_deep( $_POST   );
-		$_COOKIE = stripslashes_deep( $_COOKIE );
-	}
-
 	// Escape with wpdb.
 	$_GET    = add_magic_quotes( $_GET    );
 	$_POST   = add_magic_quotes( $_POST   );

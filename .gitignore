@@ -3,3 +3,4 @@
 /.*/
 /wp-content/
 wp-config.php
+.htaccess

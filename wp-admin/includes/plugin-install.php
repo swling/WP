@@ -374,8 +374,8 @@ function display_plugins_table() {
  *
  * @since 3.0.0
  *
- * @param  array|object $api  Data about the plugin retrieved from the API.
- * @param  bool         $loop Optional. Disable further loops. Default false.
+ * @param array|object $api  Data about the plugin retrieved from the API.
+ * @param bool         $loop Optional. Disable further loops. Default false.
  * @return array {
  *     Plugin installation status data.
  *
@@ -385,66 +385,75 @@ function display_plugins_table() {
  *     @type string $file    Plugin filename relative to the plugins directory.
  * }
  */
-function install_plugin_install_status($api, $loop = false) {
+function install_plugin_install_status( $api, $loop = false ) {
 	// This function is called recursively, $loop prevents further loops.
-	if ( is_array($api) )
+	if ( is_array( $api ) ) {
 		$api = (object) $api;
+	}
 
-	// Default to a "new" plugin
-	$status = 'install';
-	$url = false;
+	// Default to a "new" plugin.
+	$status      = 'install';
+	$url         = false;
 	$update_file = false;
+	$version     = '';
 
 	/*
 	 * Check to see if this plugin is known to be installed,
 	 * and has an update awaiting it.
 	 */
-	$update_plugins = get_site_transient('update_plugins');
+	$update_plugins = get_site_transient( 'update_plugins' );
 	if ( isset( $update_plugins->response ) ) {
-		foreach ( (array)$update_plugins->response as $file => $plugin ) {
+		foreach ( (array) $update_plugins->response as $file => $plugin ) {
 			if ( $plugin->slug === $api->slug ) {
-				$status = 'update_available';
+				$status      = 'update_available';
 				$update_file = $file;
-				$version = $plugin->new_version;
-				if ( current_user_can('update_plugins') )
-					$url = wp_nonce_url(self_admin_url('update.php?action=upgrade-plugin&plugin=' . $update_file), 'upgrade-plugin_' . $update_file);
+				$version     = $plugin->new_version;
+				if ( current_user_can( 'update_plugins' ) ) {
+					$url = wp_nonce_url( self_admin_url( 'update.php?action=upgrade-plugin&plugin=' . $update_file ), 'upgrade-plugin_' . $update_file );
+				}
 				break;
 			}
 		}
 	}
 
-	if ( 'install' == $status ) {
+	if ( 'install' === $status ) {
 		if ( is_dir( WP_PLUGIN_DIR . '/' . $api->slug ) ) {
-			$installed_plugin = get_plugins('/' . $api->slug);
-			if ( empty($installed_plugin) ) {
-				if ( current_user_can('install_plugins') )
-					$url = wp_nonce_url(self_admin_url('update.php?action=install-plugin&plugin=' . $api->slug), 'install-plugin_' . $api->slug);
+			$installed_plugin = get_plugins( '/' . $api->slug );
+			if ( empty( $installed_plugin ) ) {
+				if ( current_user_can( 'install_plugins' ) ) {
+					$url = wp_nonce_url( self_admin_url( 'update.php?action=install-plugin&plugin=' . $api->slug ), 'install-plugin_' . $api->slug );
+				}
 			} else {
 				$key = array_keys( $installed_plugin );
-				$key = reset( $key ); //Use the first plugin regardless of the name, Could have issues for multiple-plugins in one directory if they share different version numbers
+				// Use the first plugin regardless of the name.
+				// Could have issues for multiple plugins in one directory if they share different version numbers.
+				$key = reset( $key );
+
 				$update_file = $api->slug . '/' . $key;
-				if ( version_compare($api->version, $installed_plugin[ $key ]['Version'], '=') ){
+				if ( version_compare( $api->version, $installed_plugin[ $key ]['Version'], '=' ) ) {
 					$status = 'latest_installed';
-				} elseif ( version_compare($api->version, $installed_plugin[ $key ]['Version'], '<') ) {
-					$status = 'newer_installed';
+				} elseif ( version_compare( $api->version, $installed_plugin[ $key ]['Version'], '<' ) ) {
+					$status  = 'newer_installed';
 					$version = $installed_plugin[ $key ]['Version'];
 				} else {
-					//If the above update check failed, Then that probably means that the update checker has out-of-date information, force a refresh
+					// If the above update check failed, then that probably means that the update checker has out-of-date information, force a refresh.
 					if ( ! $loop ) {
-						delete_site_transient('update_plugins');
+						delete_site_transient( 'update_plugins' );
 						wp_update_plugins();
-						return install_plugin_install_status($api, true);
+						return install_plugin_install_status( $api, true );
 					}
 				}
 			}
 		} else {
-			// "install" & no directory with that slug
-			if ( current_user_can('install_plugins') )
-				$url = wp_nonce_url(self_admin_url('update.php?action=install-plugin&plugin=' . $api->slug), 'install-plugin_' . $api->slug);
+			// "install" & no directory with that slug.
+			if ( current_user_can( 'install_plugins' ) ) {
+				$url = wp_nonce_url( self_admin_url( 'update.php?action=install-plugin&plugin=' . $api->slug ), 'install-plugin_' . $api->slug );
+			}
 		}
 	}
-	if ( isset($_GET['from']) )
+	if ( isset( $_GET['from'] ) ) {
 		$url .= '&amp;from=' . urlencode( wp_unslash( $_GET['from'] ) );
+	}
 
 	$file = $update_file;
 	return compact( 'status', 'url', 'version', 'file' );

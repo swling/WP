@@ -1009,56 +1009,69 @@ function get_available_post_statuses($type = 'post') {
 }
 
 /**
- * Run the wp query to fetch the posts for listing on the edit posts page
+ * Runs the query to fetch the posts for listing on the edit posts page.
  *
  * @since 2.5.0
  *
- * @param array|bool $q Array of query variables to use to build the query or false to use $_GET superglobal.
+ * @param array|false $q Optional. Array of query variables to use to build the query.
+ *                       Defaults to the `$_GET` superglobal.
  * @return array
  */
 function wp_edit_posts_query( $q = false ) {
-	if ( false === $q )
+	if ( false === $q ) {
 		$q = $_GET;
-	$q['m'] = isset($q['m']) ? (int) $q['m'] : 0;
-	$q['cat'] = isset($q['cat']) ? (int) $q['cat'] : 0;
-	$post_stati  = get_post_stati();
-
-	if ( isset($q['post_type']) && in_array( $q['post_type'], get_post_types() ) )
-		$post_type = $q['post_type'];
-	else
-		$post_type = 'post';
-
-	$avail_post_stati = get_available_post_statuses($post_type);
-
-	if ( isset($q['post_status']) && in_array( $q['post_status'], $post_stati ) ) {
-		$post_status = $q['post_status'];
-		$perm = 'readable';
 	}
+	$q['m']     = isset( $q['m'] ) ? (int) $q['m'] : 0;
+	$q['cat']   = isset( $q['cat'] ) ? (int) $q['cat'] : 0;
+	$post_stati = get_post_stati();
+
+	if ( isset( $q['post_type'] ) && in_array( $q['post_type'], get_post_types(), true ) ) {
+		$post_type = $q['post_type'];
+	} else {
+		$post_type = 'post';
+	}
+
+	$avail_post_stati = get_available_post_statuses( $post_type );
+	$post_status      = '';
+	$perm             = '';
+
+	if ( isset( $q['post_status'] ) && in_array( $q['post_status'], $post_stati, true ) ) {
+		$post_status = $q['post_status'];
+		$perm        = 'readable';
+	}
+
+	$orderby = '';
 
 	if ( isset( $q['orderby'] ) ) {
 		$orderby = $q['orderby'];
-	} elseif ( isset( $q['post_status'] ) && in_array( $q['post_status'], array( 'pending', 'draft' ) ) ) {
+	} elseif ( isset( $q['post_status'] ) && in_array( $q['post_status'], array( 'pending', 'draft' ), true ) ) {
 		$orderby = 'modified';
 	}
 
+	$order = '';
+
 	if ( isset( $q['order'] ) ) {
 		$order = $q['order'];
-	} elseif ( isset( $q['post_status'] ) && 'pending' == $q['post_status'] ) {
+	} elseif ( isset( $q['post_status'] ) && 'pending' === $q['post_status'] ) {
 		$order = 'ASC';
 	}
 
-	$per_page = "edit_{$post_type}_per_page";
+	$per_page       = "edit_{$post_type}_per_page";
 	$posts_per_page = (int) get_user_option( $per_page );
-	if ( empty( $posts_per_page ) || $posts_per_page < 1 )
+	if ( empty( $posts_per_page ) || $posts_per_page < 1 ) {
 		$posts_per_page = 20;
+	}
 
 	/**
 	 * Filters the number of items per page to show for a specific 'per_page' type.
 	 *
 	 * The dynamic portion of the hook name, `$post_type`, refers to the post type.
 	 *
-	 * Some examples of filter hooks generated here include: 'edit_attachment_per_page',
-	 * 'edit_post_per_page', 'edit_page_per_page', etc.
+	 * Possible hook names include:
+	 *
+	 *  - `edit_post_per_page`
+	 *  - `edit_page_per_page`
+	 *  - `edit_attachment_per_page`
 	 *
 	 * @since 3.0.0
 	 *
@@ -1077,19 +1090,20 @@ function wp_edit_posts_query( $q = false ) {
 	 */
 	$posts_per_page = apply_filters( 'edit_posts_per_page', $posts_per_page, $post_type );
 
-	$query = compact('post_type', 'post_status', 'perm', 'order', 'orderby', 'posts_per_page');
+	$query = compact( 'post_type', 'post_status', 'perm', 'order', 'orderby', 'posts_per_page' );
 
 	// Hierarchical types require special args.
-	if ( is_post_type_hierarchical( $post_type ) && !isset($orderby) ) {
-		$query['orderby'] = 'menu_order title';
-		$query['order'] = 'asc';
-		$query['posts_per_page'] = -1;
+	if ( is_post_type_hierarchical( $post_type ) && empty( $orderby ) ) {
+		$query['orderby']                = 'menu_order title';
+		$query['order']                  = 'asc';
+		$query['posts_per_page']         = -1;
 		$query['posts_per_archive_page'] = -1;
-		$query['fields'] = 'id=>parent';
+		$query['fields']                 = 'id=>parent';
 	}
 
-	if ( ! empty( $q['show_sticky'] ) )
+	if ( ! empty( $q['show_sticky'] ) ) {
 		$query['post__in'] = (array) get_option( 'sticky_posts' );
+	}
 
 	wp( $query );
 

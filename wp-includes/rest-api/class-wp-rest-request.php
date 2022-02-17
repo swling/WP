@@ -335,7 +335,7 @@ class WP_REST_Request implements ArrayAccess {
 		$order = array();
 
 		$content_type = $this->get_content_type();
-		if ( $content_type['value'] === 'application/json' ) {
+		if (isset( $content_type['value'] ) && $content_type['value'] === 'application/json' ) {
 			$order[] = 'JSON';
 		}
 
@@ -687,15 +687,6 @@ class WP_REST_Request implements ArrayAccess {
 		}
 
 		parse_str( $this->get_body(), $params );
-
-		/*
-		 * Amazingly, parse_str follows magic quote rules. Sigh.
-		 *
-		 * NOTE: Do not refactor to use `wp_unslash`.
-		 */
-		if ( get_magic_quotes_gpc() ) {
-			$params = stripslashes_deep( $params );
-		}
 
 		/*
 		 * Add to the POST parameters stored internally. If a user has already
