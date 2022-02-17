@@ -1,0 +1,5 @@
+*.zip
+*.log
+/.*/
+/wp-content/
+wp-config.php
